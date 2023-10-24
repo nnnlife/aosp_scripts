@@ -1,0 +1,77 @@
+#!/bin/bash
+
+
+
+check_env() {
+    OUT_DIR=${OUT}
+
+    if [ -z "${OUT_DIR}" ]; then
+        cd /android/platform/titan
+        . /android/platform/titan/build/envsetup.sh
+        lunch titan_trout_x86-userdebug
+        echo "OUT: ${OUT_DIR}"
+    fi
+}
+
+
+build() {
+    check_env
+    pushd .
+    cd packages/apps/Car/SystemUI
+    mma -j
+    status=$?
+    popd
+    if [ $status -ne 0 ]; then
+        echo "fail to build"
+        exit 1
+    fi
+}
+
+sync() {
+    check_env
+    adb wait-for-device
+    adb root
+    verity_status=$(adb shell avbctl get-verity)
+    if [[ $verity_status == *"enabled"* ]]; then
+        adb disable-verity
+        adb reboot
+        adb wait-for-device
+        adb root
+    fi
+    adb remount
+    adb sync
+}
+
+kill() {
+    check_env
+    adb shell pkill -TERM -f com.android.systemui
+}
+
+all() {
+    build
+    sync
+    kill
+}
+
+usage() {
+    echo $0: all\|build\|sync
+}
+
+
+if test $# != 1; then
+    usage
+else
+    case "$1" in
+        --help)
+            usage 0
+            ;;
+        all|build|sync|kill)
+            "$1"
+            ;;
+        *)
+            usage
+            ;;
+    esac
+fi
+
+exit 0
