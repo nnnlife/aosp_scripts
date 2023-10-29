@@ -1,0 +1,109 @@
+#!/bin/bash
+
+
+AOSP_PATH=""
+SRC_PATH=packages/apps/Car/SystemUI
+TARGET=""
+SYSUI_PROCESS=com.android.systemui
+
+check_env() {
+	if [[ -z "$ANDROID_BUILD_TOP" ]]; then
+        cd ${AOSP_PATH}
+        . ${AOSP_PATH}/build/envsetup.sh
+        lunch ${TARGET}
+	fi
+
+
+	if [[ -z "$ANDROID_BUILD_TOP" ]]; then
+        echo 'cannot find ANDROID_BUILD_TOP'
+        exit 1
+	else
+		echo "TOP: ${ANDROID_BUILD_TOP}"
+	fi
+}
+
+build() {
+    check_env
+    ${ANDROID_BUILD_TOP}/${SRC_PATH}/tools/generate-overlayable.sh
+    pushd .
+    cd ${ANDROID_BUILD_TOP}/${SRC_PATH}
+    mma -j
+    status=$?
+    popd
+    if [ $status -ne 0 ]; then
+        echo "build failed"
+        exit 1
+    fi
+}
+
+sync() {
+    check_env
+    echo "wait for device"
+    adb wait-for-device
+    adb root
+    verity_status=$(adb shell avbctl get-verity)
+    if [[ $verity_status == *"enabled"* ]]; then
+        adb disable-verity
+        adb reboot
+        adb wait-for-device
+        adb root
+    fi
+    adb remount
+    adb sync
+}
+
+kill() {
+    check_env
+    adb shell pkill -TERM -f ${SYSUI_PROCESS}
+}
+
+unit_test() {
+    check_env
+	# only for titan
+    if [ $TARGET == "titan_trout_x86-userdebug" ]; then
+		adb install ${ANDROID_BUILD_TOP}/out/target/product/titan_trout_x86/testcases/CarSystemUITests/x86/CarSystemUITests.apk
+		adb shell am instrument -w -r -e package com.android.systemui.car,com.android.systemui.wm com.android.systemui.tests/android.testing.TestableInstrumentation
+	else
+		echo "NOT TITAN TARGET device, skip"
+	fi
+}
+
+all() {
+    build
+    sync
+    kill
+}
+
+usage() {
+    echo $0: titan\|aosp all\|build\|sync\|test
+}
+
+if test $# != 2; then
+    usage
+else
+    case "$1" in
+		titan)
+			AOSP_PATH=/android/platform/titanpol
+			TARGET=titan_trout_x86-userdebug
+			;;
+		aosp)
+			AOSP_PATH=/android/platform/aosp
+			TARGET=aosp_cf_x86_64_auto-userdebug
+			;;
+        *)
+            usage
+			exit 1
+            ;;
+    esac
+
+	case "$2" in
+        all|build|sync|kill|unit_test)
+            "$2"
+            ;;
+		*)
+            usage
+			;;
+	esac
+fi
+
+exit 0

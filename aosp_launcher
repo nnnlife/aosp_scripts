@@ -1,23 +1,28 @@
 #!/bin/bash
 
-
+AOSP_PATH=/android/platform/aosp
+SRC_PATH=packages/apps/Car/Launcher
 
 check_env() {
-    OUT_DIR=${OUT}
+	if [[ -z "$ANDROID_BUILD_TOP" ]]; then
+        cd ${AOSP_PATH}
+        . ${AOSP_PATH}/build/envsetup.sh
+        lunch aosp_cf_x86_64_auto-userdebug
+	fi
 
-    if [ -z "${OUT_DIR}" ]; then
-        cd /android/platform/titan
-        . /android/platform/titan/build/envsetup.sh
-        lunch titan_trout_x86-userdebug
-        echo "OUT: ${OUT_DIR}"
-    fi
+	if [[ -z "$ANDROID_BUILD_TOP" ]]; then
+        echo 'cannot find ANDROID_BUILD_TOP'
+        exit 1
+	else
+		echo "TOP: ${ANDROID_BUILD_TOP}"
+	fi
 }
-
 
 build() {
     check_env
+    #${ANDROID_BUILD_TOP}/${SRC_PATH}/tools/generate-overlayable.sh
     pushd .
-    cd packages/apps/Car/SystemUI
+    cd ${ANDROID_BUILD_TOP}/${SRC_PATH}
     mma -j
     status=$?
     popd
@@ -29,6 +34,7 @@ build() {
 
 sync() {
     check_env
+    echo "wait for device"
     adb wait-for-device
     adb root
     verity_status=$(adb shell avbctl get-verity)
@@ -44,8 +50,10 @@ sync() {
 
 kill() {
     check_env
-    adb shell pkill -TERM -f com.android.systemui
+	
+    adb shell pkill -TERM -f com.android.car.carlauncher
 }
+
 
 all() {
     build
@@ -53,10 +61,10 @@ all() {
     kill
 }
 
-usage() {
-    echo $0: all\|build\|sync
-}
 
+usage() {
+    echo $0: all\|build\|sync\|test
+}
 
 if test $# != 1; then
     usage
