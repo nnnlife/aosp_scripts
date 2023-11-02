@@ -1,0 +1,3 @@
+CROSVM_PATH=/android/platform/titanpol/out/host/linux-x86/bin/crosvm
+SOCKET_PATH=/home/yongwoo/cuttlefish/instances/cvd-1/internal/crosvm_control.sock
+${CROSVM_PATH} usb list ${SOCKET_PATH}

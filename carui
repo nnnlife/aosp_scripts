@@ -8,6 +8,7 @@ SYSUI_PROCESS=com.android.systemui
 
 check_env() {
 	if [[ -z "$ANDROID_BUILD_TOP" ]]; then
+		echo "move to ${AOSP_PATH}"
         cd ${AOSP_PATH}
         . ${AOSP_PATH}/build/envsetup.sh
         lunch ${TARGET}
