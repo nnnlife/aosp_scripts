@@ -1,0 +1,8 @@
+#!/bin/bash
+
+usage() {
+	echo $0: property_name
+}
+
+
+adb shell getprop $1
