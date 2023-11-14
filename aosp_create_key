@@ -1,0 +1,4 @@
+openssl pkcs8 -inform DER -nocrypt -in platform.pk8 -out platform.pem
+openssl pkcs12 -export -in platform.x509.pem -inkey platform.pem -out platform.p12 -password pass:android -name androiddebugkey
+
+keytool -importkeystore -deststorepass android -destkeystore platform.jks -srcstoretype PKCS12 -srcstorepass android -srckeystore platform.p12
