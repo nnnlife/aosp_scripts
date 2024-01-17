@@ -63,6 +63,13 @@ else
 			INSTANCE_DIR=/home/yongwoo/cf/aosp
 			CVD_OPTIONS="--gpu_mode=gfxstream --display0=width=1920,height=1080,dpi=120 --display1= --instance_dir=${INSTANCE_DIR} --assembly_dir=${INSTANCE_DIR}_assembly"
 			;;
+		kross)
+			AOSP_PATH=/android/platform/kross
+			TARGET=titan_trout_x86-userdebug
+			INSTANCE_DIR=/home/yongwoo/cf/kross
+			CVD_OPTIONS="-config titan --instance_dir=${INSTANCE_DIR} --assembly_dir=${INSTANCE_DIR}_assembly"
+			;;
+
         *)
             usage
 			exit 1

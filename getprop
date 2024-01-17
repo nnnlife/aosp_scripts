@@ -1,8 +1,82 @@
 #!/bin/bash
 
-usage() {
-	echo $0: property_name
+
+AOSP_PATH=""
+TARGET=""
+CVD_OPTIONS=""
+
+check_env() {
+	if [[ -z "$ANDROID_BUILD_TOP" ]]; then
+		echo "move to ${AOSP_PATH}"
+        cd ${AOSP_PATH}
+        . ${AOSP_PATH}/build/envsetup.sh
+        lunch ${TARGET}
+	fi
+
+
+	if [[ -z "$ANDROID_BUILD_TOP" ]]; then
+        echo 'cannot find ANDROID_BUILD_TOP'
+        exit 1
+	else
+		echo "TOP: ${ANDROID_BUILD_TOP}"
+	fi
 }
 
+run() {
+	check_env
+	launch_cvd ${CVD_OPTIONS}
+}
 
-adb shell getprop $1
+clean() {
+	check_env
+	if [[ -z "${INSTANCE_DIR}" ]]; then
+		echo "CANNOT FIND INSTANCE_DIR"
+		exit 1
+	else
+		stop_cvd
+		rm -rf ${INSTANCE_DIR}*
+	fi
+}
+
+stop() {
+	check_env
+	stop_cvd
+}
+
+usage() {
+	echo $0: titan\|aosp run
+}
+
+if test $# != 2; then
+    usage
+else
+    case "$1" in
+		titan)
+			AOSP_PATH=/android/platform/titanpol
+			TARGET=titan_trout_x86-userdebug
+			INSTANCE_DIR=/home/yongwoo/cf/titan
+			CVD_OPTIONS="-config titan --instance_dir=${INSTANCE_DIR} --assembly_dir=${INSTANCE_DIR}_assembly" #--display0=width=2560,height=1440,dpi=160"
+			;;
+		aosp)
+			AOSP_PATH=/android/platform/aosp
+			TARGET=aosp_cf_x86_64_auto-userdebug
+			INSTANCE_DIR=/home/yongwoo/cf/aosp
+			CVD_OPTIONS="--gpu_mode=gfxstream --display0=width=1920,height=1080,dpi=120 --display1= --instance_dir=${INSTANCE_DIR} --assembly_dir=${INSTANCE_DIR}_assembly"
+			;;
+        *)
+            usage
+			exit 1
+            ;;
+    esac
+
+	case "$2" in
+        run|stop|clean)
+            "$2"
+            ;;
+		*)
+            usage
+			;;
+	esac
+fi
+
+exit 0
